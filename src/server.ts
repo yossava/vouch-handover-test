@@ -61,7 +61,7 @@ export function buildServer(opts: { complete?: ChatComplete } = {}) {
 
     if (q.format === "html") {
       reply.type("text/html");
-      return toHtml(handover, sample.hotel.id);
+      return toHtml(handover, sample.hotel, new Date().toISOString());
     }
     return toResponseJson(handover, sample.hotel.id);
   });

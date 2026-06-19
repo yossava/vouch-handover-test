@@ -41,7 +41,8 @@ describe("GET /handover (bundled sample)", () => {
     const res = await app.inject({ method: "GET", url: "/handover?format=html" });
     expect(res.statusCode).toBe(200);
     expect(res.headers["content-type"]).toMatch(/html/);
-    expect(res.body).toContain("<h1>Night-shift handover");
+    expect(res.body).toContain("Lumen Boutique Hotel");
+    expect(res.body).toContain("Flagged items need human review");
     await app.close();
   });
 });

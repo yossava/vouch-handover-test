@@ -8,6 +8,8 @@ export interface HandoverItem {
   refs: string[]; // evidence: event/block ids backing this item
   summary: string;
   flaggedReason?: string;
+  since?: string | null; // morning the item first appeared — for "OPEN since <date>"
+  contradiction?: { a: string; b: string }; // two conflicting statements, surfaced in the flagged view
 }
 
 export interface Handover {
@@ -29,6 +31,7 @@ export function threadToItem(t: Thread, summaries: Map<string, string>): Handove
     status: t.status,
     refs: t.events.map((e) => e.id),
     summary: summaries.get(t.key) ?? fallbackSummary(t),
+    since: t.firstShift,
   };
   if (sev.reason) item.flaggedReason = sev.reason;
   return item;
