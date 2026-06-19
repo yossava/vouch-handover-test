@@ -1,0 +1,33 @@
+{
+  "name": "vouch-handover",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Night-shift handover service for small hotels — Vouch builder test.",
+  "type": "module",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "dependencies": {
+    "fastify": "^5.8.5",
+    "openai": "^6.44.0",
+    "pino": "^10.3.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
