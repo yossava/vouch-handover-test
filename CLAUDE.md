@@ -59,3 +59,11 @@ Order: **`emergency` > `on_fire` > `flagged` > `pending` > `fyi`.**
 - Trusting the model for severity / inclusion / PII.
 - Re-reporting items resolved on earlier shifts.
 - Polishing the UI while grounding is weak.
+
+## 7. Workflow (enforced)
+
+**After each feature and BEFORE each commit, run `/review`, apply safe fixes, and confirm typecheck +
+unit tests pass.** A pre-commit hook (`.githooks/pre-commit`) runs the fast deterministic gate
+(typecheck + lint + unit tests) and blocks the commit on failure. The API-calling `eval/` regression
+runs at Step 9 (CI / manual), not per commit. Enable the hook once per clone:
+`git config core.hooksPath .githooks`.

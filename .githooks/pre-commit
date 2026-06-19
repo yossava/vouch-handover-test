@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# Fast, deterministic pre-commit gate for vouch-handover-test.
+# Runs typecheck -> lint -> unit tests and BLOCKS the commit if any FAILS.
+#
+# Notes:
+#   * Offline + fast only. The API-calling eval/ regression (Step 9) needs the
+#     network + DEEPSEEK key and is too slow for per-commit; it runs in CI / by
+#     hand, never in this hook.
+#   * Checks that don't exist yet are skipped (`npm run --if-present`), so this
+#     hook is safe during bootstrap, before package.json / scripts exist.
+#   * Enable once per clone:  git config core.hooksPath .githooks
+#
+set -e
+
+if [ ! -f package.json ]; then
+  echo "pre-commit: no package.json yet — nothing to check."
+  exit 0
+fi
+
+echo "pre-commit: typecheck…"
+npm run --if-present typecheck
+
+echo "pre-commit: lint…"
+npm run --if-present lint
+
+echo "pre-commit: unit tests…"
+npm run --if-present test:unit
+
+echo "pre-commit: OK"
