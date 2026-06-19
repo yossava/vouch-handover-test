@@ -15,6 +15,7 @@ export interface Event {
   type: string | null; // structured event type; null until the model classifies a block
   text: string; // description (structured) | verbatim original-language block (night-log)
   source: EventSource;
+  status: string | null; // raw structured status (resolved/unresolved/pending); null for night-log blocks
 }
 
 /** A night shift (23:00–07:00, spanning two dates), keyed by the morning it ends. */
@@ -42,6 +43,7 @@ export function normalizeEvents(raw: FrontDeskEvent[]): Event[] {
     type: e.type,
     text: e.description,
     source: "events",
+    status: e.status,
   }));
 }
 
@@ -64,6 +66,7 @@ export function splitNightLog(markdown: string): Event[] {
     type: null,
     text,
     source: "night-log",
+    status: null,
   }));
 }
 

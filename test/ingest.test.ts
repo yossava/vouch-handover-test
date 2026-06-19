@@ -13,7 +13,7 @@ import { loadSampleData } from "../src/data";
 const TZ = 480; // +08:00 in minutes
 
 function ev(id: string, ts: string | null): Event {
-  return { id, ts, room: null, guest: null, type: null, text: id, source: "events" };
+  return { id, ts, room: null, guest: null, type: null, text: id, source: "events", status: null };
 }
 
 describe("sortByTimestamp", () => {
@@ -33,7 +33,7 @@ describe("sortByTimestamp", () => {
   });
 
   it("sorts untimed (night-log) events last", () => {
-    const block: Event = { id: "log_0001", ts: null, room: null, guest: null, type: null, text: "x", source: "night-log" };
+    const block: Event = { id: "log_0001", ts: null, room: null, guest: null, type: null, text: "x", source: "night-log", status: null };
     const sorted = sortByTimestamp([block, ev("evt", "2026-05-29T02:15:00+08:00")]);
     expect(sorted.map((e) => e.id)).toEqual(["evt", "log_0001"]);
   });
@@ -63,7 +63,7 @@ describe("bucketIntoShifts (23:00–07:00 across two dates, +08:00)", () => {
   });
 
   it("skips untimed events", () => {
-    const block: Event = { id: "log_0001", ts: null, room: null, guest: null, type: null, text: "x", source: "night-log" };
+    const block: Event = { id: "log_0001", ts: null, room: null, guest: null, type: null, text: "x", source: "night-log", status: null };
     expect(bucketIntoShifts([block], TZ)).toHaveLength(0);
   });
 
@@ -88,7 +88,7 @@ describe("parseUtcOffset", () => {
 });
 
 describe("normalizeEvents", () => {
-  it("maps raw fields to the unified Event and drops status", () => {
+  it("maps raw fields to the unified Event and carries status through", () => {
     const [e] = normalizeEvents([
       {
         id: "evt_0001",
@@ -108,6 +108,7 @@ describe("normalizeEvents", () => {
       type: "check_in",
       text: "Late check-in.",
       source: "events",
+      status: "resolved",
     });
   });
 });
