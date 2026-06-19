@@ -103,3 +103,56 @@ describe("error handling", () => {
     await app.close();
   });
 });
+
+describe("HTML form + POST html", () => {
+  const eventsOnly = {
+    hotel: { id: "demo-1", name: "Demo Inn", rooms: 20, timezone: "+08:00" },
+    events: [{ id: "e1", timestamp: "2026-07-02T02:00:00+08:00", type: "maintenance", room: "9", guest: null, description: "Aircon out of order.", status: "unresolved" }],
+    asOfDate: "2026-07-02",
+  };
+
+  it("serves the submission form at GET /", async () => {
+    const app = server();
+    const res = await app.inject({ method: "GET", url: "/" });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/html/);
+    expect(res.body).toContain("submit a night");
+    await app.close();
+  });
+
+  it("POST /handover?format=html renders the handover", async () => {
+    const app = server();
+    const res = await app.inject({ method: "POST", url: "/handover?format=html", payload: eventsOnly });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/html/);
+    expect(res.body).toContain("Demo Inn");
+    await app.close();
+  });
+
+  it("POST /form accepts an urlencoded payload and returns handover HTML", async () => {
+    const app = server();
+    const res = await app.inject({
+      method: "POST",
+      url: "/form",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: "payload=" + encodeURIComponent(JSON.stringify(eventsOnly)),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/html/);
+    expect(res.body).toContain("Demo Inn");
+    await app.close();
+  });
+
+  it("POST /form returns a 400 error page for invalid JSON", async () => {
+    const app = server();
+    const res = await app.inject({
+      method: "POST",
+      url: "/form",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: "payload=" + encodeURIComponent("{ not json"),
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toMatch(/valid JSON/i);
+    await app.close();
+  });
+});

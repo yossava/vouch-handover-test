@@ -157,3 +157,28 @@ ${banner}${sections}
 </body>
 </html>`;
 }
+
+/** A no-JS HTML form for pasting a submission and viewing the rendered handover. */
+export function formPage(exampleJson: string): string {
+  const e = escapeHtml;
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vouch Handover — submit a night</title>
+<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:54rem;margin:1.5rem auto;padding:0 1rem;line-height:1.45}h1{font-size:1.2rem}textarea{width:100%;height:20rem;font-family:ui-monospace,SFMono-Regular,monospace;font-size:.8rem;padding:.5rem;box-sizing:border-box}button{margin-top:.6rem;padding:.5rem 1rem;font-size:1rem;cursor:pointer}.hint{color:#555;font-size:.9rem}code{background:#eee;padding:.05rem .25rem;border-radius:.2rem}</style></head>
+<body>
+  <h1>Night-shift handover — submit a night</h1>
+  <p class="hint">Paste a JSON body — <code>{ hotel, events?, nightLogs?, asOfDate? }</code>. <code>events</code> and <code>nightLogs</code> are each optional; <code>asOfDate</code> defaults to the latest shift.</p>
+  <form method="post" action="/form">
+    <textarea name="payload" spellcheck="false">${e(exampleJson)}</textarea>
+    <div><button type="submit">Generate handover →</button></div>
+  </form>
+</body></html>`;
+}
+
+/** Minimal HTML error page for the form path (no stack traces). */
+export function errorPage(message: string): string {
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Could not generate handover</title>
+<style>body{font-family:system-ui,sans-serif;max-width:42rem;margin:2rem auto;padding:0 1rem}.e{background:#fdecea;border:1px solid #e74c3c;padding:.75rem;border-radius:.3rem;white-space:pre-wrap}a{display:inline-block;margin-top:1rem}</style></head>
+<body><h1>Could not generate handover</h1><div class="e">${escapeHtml(message)}</div><a href="/">← back to the form</a></body></html>`;
+}
