@@ -14,9 +14,11 @@ export function buildServer(opts: { complete?: ChatComplete } = {}) {
 
   // Never leak internals to the client; log the detail, return a generic body.
   app.setErrorHandler((err: FastifyError, req, reply) => {
-    req.log.error({ error: err.message }, "request.error");
     const code = err.statusCode && err.statusCode < 500 ? err.statusCode : 500;
-    reply.code(code).send({ error: code < 500 ? "bad request" : "internal error" });
+    // 4xx are client errors with safe messages; 5xx stay generic so internals never leak.
+    if (code < 500) req.log.warn({ error: err.message, code }, "request.rejected");
+    else req.log.error({ error: err.message }, "request.error");
+    reply.code(code).send({ error: code < 500 ? err.message : "internal error" });
   });
 
   app.get("/health", async () => {

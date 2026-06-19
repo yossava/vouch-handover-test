@@ -78,11 +78,28 @@ describe("POST /handover (tolerant input)", () => {
     await app.close();
   });
 
-  it("rejects an invalid body with 400 (no stack/leak)", async () => {
+  it("rejects an empty body with 400 (no stack/leak)", async () => {
     const app = server();
-    const res = await app.inject({ method: "POST", url: "/handover", payload: { events: [] } });
+    const res = await app.inject({ method: "POST", url: "/handover", payload: {} });
     expect(res.statusCode).toBe(400);
     expect(res.json().error).toMatch(/invalid request/);
+    await app.close();
+  });
+
+  it("rejects a malformed events array with 400", async () => {
+    const app = server();
+    const res = await app.inject({ method: "POST", url: "/handover", payload: { hotel, events: "not-an-array" } });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+});
+
+describe("error handling", () => {
+  it("returns a clean 400 (not 500/stack) for an out-of-range date", async () => {
+    const app = server();
+    const res = await app.inject({ method: "GET", url: "/handover?date=2020-01-01&format=json" });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toMatch(/no shift|available mornings/i);
     await app.close();
   });
 });

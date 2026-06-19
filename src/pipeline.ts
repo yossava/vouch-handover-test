@@ -9,6 +9,15 @@ import type { GroundingResult } from "./llm/grounding.js";
 import type { Entry } from "./llm/schema.js";
 import type { ChatComplete } from "./llm/client.js";
 
+/** Input validation error — the HTTP layer maps this to a clean 4xx. */
+export class HandoverInputError extends Error {
+  readonly statusCode = 400;
+  constructor(message: string) {
+    super(message);
+    this.name = "HandoverInputError";
+  }
+}
+
 export const handoverRequestSchema = z.object({
   hotel: hotelSchema,
   events: z.array(eventSchema).optional(),
@@ -39,7 +48,18 @@ export interface PipelineDeps {
 export async function generateHandover(input: HandoverRequest, deps: PipelineDeps): Promise<Handover> {
   const data: SampleData = { hotel: input.hotel, events: input.events ?? [], nightLogs: input.nightLogs ?? "" };
   const ingested = ingest(data);
-  const asOf = input.asOfDate ?? ingested.shifts.at(-1)?.morningDate ?? null;
+
+  const shifts = ingested.shifts;
+  if (input.asOfDate && shifts.length > 0) {
+    const first = shifts[0].morningDate;
+    const last = shifts[shifts.length - 1].morningDate;
+    if (input.asOfDate < first || input.asOfDate > last) {
+      throw new HandoverInputError(
+        `as_of date ${input.asOfDate} has no shift in this data (available mornings ${first} to ${last})`,
+      );
+    }
+  }
+  const asOf = input.asOfDate ?? shifts.at(-1)?.morningDate ?? null;
 
   const log = deps.logger.child({ hotel_id: input.hotel.id, as_of: asOf });
   log.info(
