@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectManipulation, severityForThread } from "../src/severity";
+import { detectManipulation, detectContradiction, detectIncomplete, severityForThread } from "../src/severity";
 import type { Thread } from "../src/reconcile";
 
 function thread(text: string, status: Thread["status"] = "new_tonight"): Thread {
@@ -48,5 +48,32 @@ describe("severityForThread", () => {
   it("classifies a plain open item as pending and a resolved one as fyi", () => {
     expect(severityForThread(thread("guest angry about breakfast", "still_open")).severity).toBe("pending");
     expect(severityForThread(thread("noise complaint handled", "newly_resolved")).severity).toBe("fyi");
+  });
+});
+
+describe("detectContradiction / detectIncomplete", () => {
+  it("flags a disputed, unverifiable no-show as a contradiction", () => {
+    expect(detectContradiction("guest disputes the charge. Could not verify overnight. Needs investigation before charge is confirmed or reversed.")).toBe(true);
+  });
+  it("does not treat a verified name mismatch as a contradiction", () => {
+    expect(detectContradiction("Booking name did not match passport. Verified email and selfie, allowed entry.")).toBe(false);
+  });
+  it("flags a proposed charge with no photos/approval as incomplete", () => {
+    expect(detectIncomplete("Night staff proposes charging the SGD 500 damage fee. No photos were taken and there is no manager approval.")).toBe(true);
+  });
+  it("does not flag a proposed charge that is properly evidenced", () => {
+    expect(detectIncomplete("Proposes charging SGD 500 damage fee; photos taken, manager approved.")).toBe(false);
+  });
+});
+
+describe("severityForThread — flag routing", () => {
+  it("routes a contradiction to flagged", () => {
+    expect(severityForThread(thread("guest disputes the charge, could not verify, confirmed or reversed")).severity).toBe("flagged");
+  });
+  it("routes an incomplete proposed charge to flagged", () => {
+    expect(severityForThread(thread("proposes charging SGD 500 damage fee, no photos, no manager approval")).severity).toBe("flagged");
+  });
+  it("keeps an on_fire deposit (never collected) out of flagged", () => {
+    expect(severityForThread(thread("SGD 100 deposit was never collected, flag to finance")).severity).toBe("on_fire");
   });
 });

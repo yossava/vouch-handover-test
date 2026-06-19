@@ -1,5 +1,5 @@
 import { reportableThreads, type Reconciliation, type Thread } from "./reconcile.js";
-import { severityForThread, type Severity } from "./severity.js";
+import { severityForThread, detectContradiction, type Severity } from "./severity.js";
 
 export interface HandoverItem {
   key: string;
@@ -34,6 +34,12 @@ export function threadToItem(t: Thread, summaries: Map<string, string>): Handove
     since: t.firstShift,
   };
   if (sev.reason) item.flaggedReason = sev.reason;
+  // For a flagged contradiction, surface both conflicting sources so the operator sees both sides.
+  if (sev.severity === "flagged") {
+    const dispute = t.events.find((e) => e.source === "events" && detectContradiction(e.text));
+    const other = t.events.find((e) => e.source === "events" && e !== dispute);
+    if (dispute && other) item.contradiction = { a: other.text, b: dispute.text };
+  }
   return item;
 }
 

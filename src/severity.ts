@@ -24,6 +24,19 @@ export function detectManipulation(text: string): boolean {
 
 const EMERGENCY = /\bambulance\b|\bunwell\b|\bmedical\b|\binjur|\bfire\b|\bevacuat/i;
 const ON_FIRE = /\bdeadline\b|48 hours|immigration|compliance|never collected|out of order|\bsafe\b|护照|保险箱/i;
+const CONTRADICTION = /\bdisputes?\b|\bdisputed\b|contradict|could not verify|cannot verify|conflicting account|confirmed or reversed/i;
+const PROPOSES_CHARGE = /\bpropos\w+[^.]*\bcharg|\bdamage fee\b/i;
+const MISSING_AUTHORIZATION = /no photo|no manager approval|no approval|without approval|not approved/i;
+
+/** Disputed or unverifiable conflict across sources — flag it, never pick a side. */
+export function detectContradiction(text: string): boolean {
+  return CONTRADICTION.test(text);
+}
+
+/** A proposed charge that lacks the evidence/authorization to be actioned (not charge-ready). */
+export function detectIncomplete(text: string): boolean {
+  return PROPOSES_CHARGE.test(text) && MISSING_AUTHORIZATION.test(text);
+}
 
 /**
  * Deterministic severity for a thread — code owns severity (CLAUDE.md). Manipulation
@@ -38,6 +51,12 @@ const ON_FIRE = /\bdeadline\b|48 hours|immigration|compliance|never collected|ou
 export function severityForText(text: string, isOpen: boolean): SeverityResult {
   if (detectManipulation(text)) return { severity: "flagged", reason: "manipulation attempt in source text" };
   if (EMERGENCY.test(text)) return { severity: "emergency" };
+  if (detectIncomplete(text)) {
+    return { severity: "flagged", reason: "incomplete — proposes a charge with no photos and no manager approval; not charge-ready" };
+  }
+  if (detectContradiction(text)) {
+    return { severity: "flagged", reason: "contradiction across sources — disputed and not verified" };
+  }
   if (ON_FIRE.test(text)) return { severity: "on_fire" };
   return { severity: isOpen ? "pending" : "fyi" };
 }
