@@ -6,6 +6,8 @@ manipulation/contradiction/incomplete entry flagged, and items resolved on earli
 re-reported. Runs unattended, so it optimizes for **trust** (grounding + reconciliation + resistance
 to bad/hostile input) over features.
 
+**Live:** <https://vouchtest.yoss.cloud>
+
 Design and rules: [plan.md](plan.md) · [CLAUDE.md](CLAUDE.md) · [DECISIONS.md](DECISIONS.md).
 
 ## Run locally
@@ -28,7 +30,7 @@ The **primary interface is `POST /handover`**: input arrives as data, not a file
 `asOfDate` defaults to the most recent shift in the input.
 
 ```bash
-BASE_URL=http://localhost:3000   # replace with the deployed URL
+BASE_URL=https://vouchtest.yoss.cloud   # the live deployment (use http://localhost:3000 to run locally)
 
 curl -s -X POST "$BASE_URL/handover" \
   -H 'Content-Type: application/json' \
