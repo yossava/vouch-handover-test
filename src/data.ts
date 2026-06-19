@@ -8,7 +8,7 @@ import { z } from "zod";
 const here = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(here, "..", "data");
 
-const hotelSchema = z.object({
+export const hotelSchema = z.object({
   id: z.string(),
   name: z.string(),
   rooms: z.number(),
@@ -17,7 +17,7 @@ const hotelSchema = z.object({
 
 // Validate the file's shape only. Kind / severity / grounding are decided later
 // by the model + code (see CLAUDE.md), not baked into the ingest schema.
-const eventSchema = z.object({
+export const eventSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
   type: z.string(),

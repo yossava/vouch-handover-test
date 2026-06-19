@@ -11,7 +11,7 @@ export interface HandoverItem {
 }
 
 export interface Handover {
-  targetMorning: string;
+  targetMorning: string | null;
   allClear: boolean;
   items: HandoverItem[];
   buckets: Record<Severity, HandoverItem[]>;
@@ -20,28 +20,26 @@ export interface Handover {
 
 const SEVERITIES: Severity[] = ["emergency", "on_fire", "flagged", "pending", "fyi"];
 
-/**
- * Assemble the handover from reconciled threads. CODE owns inclusion: every
- * reportable thread becomes exactly one item — the model can never remove one, so
- * "ignore all other items" is inert. "all clear" is COMPUTED from the absence of
- * actionable items, never accepted from any event. Optional `summaries` supplies
- * grounded model prose; without it a deterministic fallback is used, so the
- * structure (and its safety) never depends on the model.
- */
-export function buildHandover(r: Reconciliation, summaries: Map<string, string> = new Map()): Handover {
-  const items: HandoverItem[] = reportableThreads(r).map((t) => {
-    const sev = severityForThread(t);
-    const item: HandoverItem = {
-      key: t.key,
-      severity: sev.severity,
-      status: t.status,
-      refs: t.events.map((e) => e.id),
-      summary: summaries.get(t.key) ?? fallbackSummary(t),
-    };
-    if (sev.reason) item.flaggedReason = sev.reason;
-    return item;
-  });
+/** One reportable thread -> one item (deterministic summary unless a grounded one is supplied). */
+export function threadToItem(t: Thread, summaries: Map<string, string>): HandoverItem {
+  const sev = severityForThread(t);
+  const item: HandoverItem = {
+    key: t.key,
+    severity: sev.severity,
+    status: t.status,
+    refs: t.events.map((e) => e.id),
+    summary: summaries.get(t.key) ?? fallbackSummary(t),
+  };
+  if (sev.reason) item.flaggedReason = sev.reason;
+  return item;
+}
 
+/**
+ * Bucket items by severity and compute the handover. "all clear" is COMPUTED from
+ * the absence of actionable items (emergency/on_fire/flagged/pending), never taken
+ * from an event.
+ */
+export function assemble(targetMorning: string | null, items: HandoverItem[], suppressed: string[]): Handover {
   const buckets = Object.fromEntries(SEVERITIES.map((s) => [s, [] as HandoverItem[]])) as Record<
     Severity,
     HandoverItem[]
@@ -54,8 +52,18 @@ export function buildHandover(r: Reconciliation, summaries: Map<string, string> 
     buckets.flagged.length === 0 &&
     buckets.pending.length === 0;
 
+  return { targetMorning, allClear, items, buckets, suppressed };
+}
+
+/**
+ * Assemble a handover from reconciled threads only. CODE owns inclusion: every
+ * reportable thread becomes exactly one item. (The pipeline layers model-enriched
+ * free-text blocks on top via `assemble`.)
+ */
+export function buildHandover(r: Reconciliation, summaries: Map<string, string> = new Map()): Handover {
+  const items = reportableThreads(r).map((t) => threadToItem(t, summaries));
   const suppressed = r.threads.filter((t) => t.status === "resolved_earlier").map((t) => t.key);
-  return { targetMorning: r.targetMorning, allClear, items, buckets, suppressed };
+  return assemble(r.targetMorning, items, suppressed);
 }
 
 function fallbackSummary(t: Thread): string {

@@ -30,13 +30,22 @@ const ON_FIRE = /\bdeadline\b|48 hours|immigration|compliance|never collected|ou
  * is checked FIRST so an injected note is flagged for human review rather than acted
  * on, or escalated by its own (possibly fake) content.
  */
-export function severityForThread(t: Thread): SeverityResult {
-  const text = t.events.map((e) => e.text).join("\n");
-
+/**
+ * Core deterministic severity for a piece of source text. `isOpen` selects the
+ * non-keyword fallback (an open item is pending, otherwise fyi). Used for both
+ * structured threads and model-enriched free-text blocks.
+ */
+export function severityForText(text: string, isOpen: boolean): SeverityResult {
   if (detectManipulation(text)) return { severity: "flagged", reason: "manipulation attempt in source text" };
   if (EMERGENCY.test(text)) return { severity: "emergency" };
   if (ON_FIRE.test(text)) return { severity: "on_fire" };
-  if (t.status === "newly_resolved") return { severity: "fyi" };
-  if (t.status === "still_open" || t.status === "new_tonight") return { severity: "pending" };
-  return { severity: "fyi" };
+  return { severity: isOpen ? "pending" : "fyi" };
+}
+
+export function severityForThread(t: Thread): SeverityResult {
+  const text = t.events.map((e) => e.text).join("\n");
+  const base = severityForText(text, t.status === "still_open" || t.status === "new_tonight");
+  // resolved tonight is informational unless it is itself a manipulation attempt.
+  if (t.status === "newly_resolved" && base.severity !== "flagged") return { severity: "fyi" };
+  return base;
 }
